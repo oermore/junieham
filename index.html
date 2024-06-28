@@ -203,7 +203,7 @@
         <div class="popup-content">
             <span class="close">&times;</span>
             <h2>사진 업로드</h2>
-            <input type="file" id="image-upload" accept="image/*">
+            <input type="text" id="image-url" placeholder="이미지 URL 입력">
             <input type="text" id="tag-input" placeholder="태그 입력 (쉼표로 구분)">
             <button id="upload-button">업로드</button>
         </div>
@@ -231,7 +231,7 @@
             const closePopups = document.querySelectorAll('.close');
             const uploadModal = document.getElementById('upload-modal');
             const uploadButton = document.getElementById('upload-button');
-            const imageUploadInput = document.getElementById('image-upload');
+            const imageUrlInput = document.getElementById('image-url');
             const tagInput = document.getElementById('tag-input');
             const imagePopup = document.getElementById('image-popup');
             const popupImage = document.getElementById('popup-image');
@@ -330,19 +330,14 @@
                     uploadModal.style.display = 'block';
 
                     uploadButton.addEventListener('click', () => {
-                        const file = imageUploadInput.files[0];
+                        const imageUrl = imageUrlInput.value;
                         const tags = tagInput.value.split(',').map(tag => tag.trim());
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                                const imageSrc = reader.result;
-                                images.push({ src: imageSrc, tags: tags });
-                                saveImages();
-                                renderImages();
-                            };
-                            reader.readAsDataURL(file);
+                        if (imageUrl) {
+                            images.push({ src: imageUrl, tags: tags });
+                            saveImages();
+                            renderImages();
 
-                            imageUploadInput.value = '';
+                            imageUrlInput.value = '';
                             tagInput.value = '';
                         }
                     });
