@@ -17,12 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const popupImage = document.getElementById('popup-image');
     const downloadLink = document.getElementById('download-link');
 
-    // 이미지 URL 인코딩 함수
-    const encodeURL = (url) => {
-        return encodeURIComponent(url).replace(/%20/g, ' ');
-    };
-
-    // 로컬 스토리지에 저장된 데이터를 불러오는 함수
     const getLocalStorageImages = () => {
         try {
             return JSON.parse(localStorage.getItem('images')) || [];
@@ -39,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         images.forEach((image, index) => {
             const imgBox = document.createElement('div');
             imgBox.classList.add('image-box');
-            imgBox.style.backgroundImage = `url("${encodeURL(image.src)}")`;
+            imgBox.style.backgroundImage = `url("${image.src}")`;
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -59,6 +53,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     downloadLink.style.display = 'block';
                 }
             });
+
+            // 이미지가 로드되지 않는 경우 대체 이미지 표시
+            const imgTest = new Image();
+            imgTest.src = image.src;
+            imgTest.onerror = () => {
+                imgBox.style.backgroundImage = 'url("error.png")'; // 대체 이미지 경로
+            };
 
             imageGallery.appendChild(imgBox);
         });
@@ -151,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredImages.forEach((image, index) => {
             const imgBox = document.createElement('div');
             imgBox.classList.add('image-box');
-            imgBox.style.backgroundImage = `url("${encodeURL(image.src)}")`;
+            imgBox.style.backgroundImage = `url("${image.src}")`;
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -170,6 +171,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     downloadLink.style.display = 'block';
                 }
             });
+
+            // 이미지가 로드되지 않는 경우 대체 이미지 표시
+            const imgTest = new Image();
+            imgTest.src = image.src;
+            imgTest.onerror = () => {
+                imgBox.style.backgroundImage = 'url("error.png")'; // 대체 이미지 경로
+            };
 
             imageGallery.appendChild(imgBox);
         });
