@@ -60,14 +60,17 @@
             margin-top: 300px;
             display: flex;
             flex-wrap: wrap;
-            justify-content: center;
+            justify-content: space-between;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .image-box {
             position: relative;
-            width: 150px;
+            width: calc(20% - 10px); /* 5개씩 배치되도록 조정 */
             height: 150px;
-            margin: 10px;
+            margin-bottom: 10px;
             border: 1px solid #ccc;
             display: flex;
             align-items: center;
