@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Gallery with Upload and Tagging</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .search-container {
+            position: absolute;
+            top: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            background-color: #fff;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+        }
+
+        .search-bar-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        #search-bar {
+            width: 100%;
+            padding: 10px 40px 10px 10px;
+            font-size: 16px;
+            border-radius: 25px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        #search-button {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            height: 20px;
+            width: 20px;
+            padding: 0;
+        }
+
+        #search-button img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .image-gallery {
+            margin-top: 300px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .image-box {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .image-box input[type="checkbox"] {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: none;
+        }
+
+        .delete-mode .image-box input[type="checkbox"] {
+            display: block;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+        }
+
+        #oermore {
+            font-weight: bold;
+            cursor: pointer;
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            display: block;
+        }
+
+        #ham {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .admin-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+        }
+
+        .admin-button.show {
+            display: block;
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fefefe;
+            padding: 20px;
+            border: 1px solid #888;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 999;
+        }
+
+        .popup-content {
+            text-align: center;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        .modal-image {
+            max-width: 80%;
+            max-height: 80%;
+        }
+
+        .download-icon {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none; /* Initially hide download icon */
+        }
+
+        .download-icon img {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <div class="search-bar-wrapper">
+            <input type="text" id="search-bar" placeholder="Search...">
+            <button id="search-button"><img src="search-icon.png" alt="Search"></button>
+        </div>
+    </div>
+    
+    <div class="image-gallery" id="image-gallery">
+        <!-- Images will be dynamically added here -->
+    </div>
+    
+    <footer>
+        <span id="oermore">oermore</span>
+    </footer>
+
+    <span id="ham">ham</span>
+
+    <button id="admin-button" class="admin-button">Enter Password</button>
+
+    <div id="admin-modal" class="popup">
+        <div class="popup-content">
+            <span class="close">&times;</span>
+            <input type="password" id="admin-password" placeholder="Enter Password">
+            <button id="admin-login">Login</button>
+        </div>
+    </div>
+
+    <div id="upload-modal" class="popup">
+        <div class="popup-content">
+            <span class="close">&times;</span>
+            <h2>사진 업로드</h2>
+            <input type="file" id="image-upload" accept="image/*">
+            <input type="text" id="tag-input" placeholder="태그 입력 (쉼표로 구분)">
+            <button id="upload-button">업로드</button>
+        </div>
+    </div>
+
+    <div id="image-popup" class="popup">
+        <div class="popup-content">
+            <span class="close">&times;</span>
+            <img id="popup-image" class="modal-image">
+            <a id="download-link" class="download-icon" download><img src="download-icon.png" alt="Download"></a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchBar = document.getElementById('search-bar');
+            const searchButton = document.getElementById('search-button');
+            const imageGallery = document.getElementById('image-gallery');
+            const oermore = document.getElementById('oermore');
+            const ham = document.getElementById('ham');
+            const adminModal = document.getElementById('admin-modal');
+            const adminButton = document.getElementById('admin-button');
+            const adminLoginButton = document.getElementById('admin-login');
+            const passwordInput = document.getElementById('admin-password');
+            const closePopups = document.querySelectorAll('.close');
+            const uploadModal = document.getElementById('upload-modal');
+            const uploadButton = document.getElementById('upload-button');
+            const imageUploadInput = document.getElementById('image-upload');
+            const tagInput = document.getElementById('tag-input');
+            const batchUploadButton = document.createElement('button');
+            const batchUploadInput = document.createElement('input');
+            const batchTagInput = document.createElement('input');
+            const imagePopup = document.getElementById('image-popup');
+            const popupImage = document.getElementById('popup-image');
+            const downloadLink = document.getElementById('download-link');
+
+            batchUploadButton.textContent = '일괄 업로드';
+            batchUploadButton.classList.add('admin-button');
+            document.body.appendChild(batchUploadButton);
+            
+            batchUploadInput.type = 'file';
+            batchUploadInput.style.display = 'none';
+            document.body.appendChild(batchUploadInput);
+            
+            batchTagInput.type = 'text';
+            batchTagInput.placeholder = '태그 (쉼표로 구분)';
+            batchTagInput.style.display = 'none';
+            document.body.appendChild(batchTagInput);
+
+            let images = JSON.parse(localStorage.getItem('images')) || [];
+            let deleteMode = false;
+
+            const renderImages = () => {
+                imageGallery.innerHTML = '';
+                images.forEach((image, index) => {
+                    const imgBox = document.createElement('div');
+                    imgBox.classList.add('image-box');
+                    imgBox.style.backgroundImage = `url("${image.src}")`;
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.classList.add('delete-checkbox');
+                    checkbox.dataset.index = index;
+
+                    imgBox.appendChild(checkbox);
+
+                    imgBox.addEventListener('click', () => {
+                        if (deleteMode) {
+                            checkbox.checked = !checkbox.checked;
+                        } else {
+                            // Show image popup
+                            popupImage.src = image.src;
+                            imagePopup.style.display = 'block';
+                            downloadLink.href = image.src; // Set href for download link
+                            downloadLink.style.display = 'block'; // Show download icon
+                        }
+                    });
+
+                    imageGallery.appendChild(imgBox);
+                });
+
+                if (deleteMode) {
+                    imageGallery.classList.add('delete-mode');
+                } else {
+                    imageGallery.classList.remove('delete-mode');
+                }
+            };
+
+            const saveImages = () => {
+                localStorage.setItem('images', JSON.stringify(images));
+            };
+
+            oermore.addEventListener('click', () => {
+                adminModal.style.display = 'block';
+            });
+
+            ham.addEventListener('click', () => {
+                adminModal.style.display = 'block';
+            });
+
+            adminButton.addEventListener('click', () => {
+                adminModal.style.display = 'block';
+            });
+
+            closePopups.forEach(button => {
+                button.onclick = () => {
+                    adminModal.style.display = 'none';
+                    uploadModal.style.display = 'none';
+                    imagePopup.style.display = 'none'; // Hide image popup
+                    downloadLink.style.display = 'none'; // Hide download icon
+                };
+            });
+
+            adminLoginButton.addEventListener('click', () => {
+                const password = passwordInput.value;
+                if (password === '06280') {
+                    adminModal.style.display = 'none';
+                    adminButton.style.display = 'none';
+
+                    // Show delete button and enable delete mode
+                    deleteMode = true;
+                    renderImages();
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Delete Selected Images';
+                    deleteButton.classList.add('admin-button', 'show');
+                    document.body.appendChild(deleteButton);
+
+                    deleteButton.addEventListener('click', () => {
+                        const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
+                        const indicesToDelete = Array.from(checkboxes).map(checkbox => parseInt(checkbox.dataset.index));
+
+                        images = images.filter((_, index) => !indicesToDelete.includes(index));
+                        saveImages();
+                        renderImages();
+
+                        deleteButton.remove();
+                        deleteMode = false;
+                    });
+
+                    // 업로드 모달 보이기
+                    uploadModal.style.display = 'block';
+
+                    uploadButton.addEventListener('click', () => {
+                        const file = imageUploadInput.files[0];
+                        const tags = tagInput.value.split(',').map(tag => tag.trim());
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                                const imageSrc = reader.result;
+                                images.push({ src: imageSrc, tags: tags });
+                                saveImages();
+                                renderImages();
+                            };
+                            reader.readAsDataURL(file);
+
+                            // Clear input fields
+                            imageUploadInput.value = '';
+                            tagInput.value = '';
+                        }
+                    });
+                } else {
+                    alert('Incorrect password');
+                }
+            });
+
+            // Search functionality
+            searchButton.addEventListener('click', () => {
+                const searchText = searchBar.value.toLowerCase();
+                const filteredImages = images.filter(image => image.tags.some(tag => tag.toLowerCase().includes(searchText)));
+                renderFilteredImages(filteredImages);
+            });
+
+            const renderFilteredImages = (filteredImages) => {
+                imageGallery.innerHTML = '';
+                filteredImages.forEach((image, index) => {
+                    const imgBox = document.createElement('div');
+                    imgBox.classList.add('image-box');
+                    imgBox.style.backgroundImage = `url("${image.src}")`;
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.classList.add('delete-checkbox');
+                    checkbox.dataset.index = index;
+
+                    imgBox.appendChild(checkbox);
+
+                    imgBox.addEventListener('click', () => {
+                        if (deleteMode) {
+                            checkbox.checked = !checkbox.checked;
+                        } else {
+                            // Show image popup
+                            popupImage.src = image.src;
+                            imagePopup.style.display = 'block';
+                            downloadLink.href = image.src; // Set href for download link
+                            downloadLink.style.display = 'block'; // Show download icon
+                        }
+                    });
+
+                    imageGallery.appendChild(imgBox);
+                });
+            };
+
+            // Initial render
+            renderImages();
+        });
+    </script>
+</body>
+</html>
