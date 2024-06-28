@@ -235,25 +235,9 @@
             const uploadButton = document.getElementById('upload-button');
             const imageUploadInput = document.getElementById('image-upload');
             const tagInput = document.getElementById('tag-input');
-            const batchUploadButton = document.createElement('button');
-            const batchUploadInput = document.createElement('input');
-            const batchTagInput = document.createElement('input');
             const imagePopup = document.getElementById('image-popup');
             const popupImage = document.getElementById('popup-image');
             const downloadLink = document.getElementById('download-link');
-
-            batchUploadButton.textContent = '일괄 업로드';
-            batchUploadButton.classList.add('admin-button');
-            document.body.appendChild(batchUploadButton);
-            
-            batchUploadInput.type = 'file';
-            batchUploadInput.style.display = 'none';
-            document.body.appendChild(batchUploadInput);
-            
-            batchTagInput.type = 'text';
-            batchTagInput.placeholder = '태그 (쉼표로 구분)';
-            batchTagInput.style.display = 'none';
-            document.body.appendChild(batchTagInput);
 
             let images = JSON.parse(localStorage.getItem('images')) || [];
             let deleteMode = false;
