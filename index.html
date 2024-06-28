@@ -68,7 +68,7 @@
 
         .image-box {
             position: relative;
-            width: calc(20% - 10px); /* 5개씩 배치되도록 조정 */
+            width: calc(20% - 10px);
             height: 150px;
             margin-bottom: 10px;
             border: 1px solid #ccc;
@@ -164,7 +164,7 @@
             padding: 5px;
             border-radius: 50%;
             cursor: pointer;
-            display: none; /* Initially hide download icon */
+            display: none;
         }
 
         .download-icon img {
@@ -181,9 +181,7 @@
         </div>
     </div>
     
-    <div class="image-gallery" id="image-gallery">
-        <!-- Images will be dynamically added here -->
-    </div>
+    <div class="image-gallery" id="image-gallery"></div>
     
     <footer>
         <span id="oermore">oermore</span>
@@ -263,8 +261,8 @@
                             // Show image popup
                             popupImage.src = image.src;
                             imagePopup.style.display = 'block';
-                            downloadLink.href = image.src; // Set href for download link
-                            downloadLink.style.display = 'block'; // Show download icon
+                            downloadLink.href = image.src;
+                            downloadLink.style.display = 'block';
                         }
                     });
 
@@ -298,8 +296,8 @@
                 button.onclick = () => {
                     adminModal.style.display = 'none';
                     uploadModal.style.display = 'none';
-                    imagePopup.style.display = 'none'; // Hide image popup
-                    downloadLink.style.display = 'none'; // Hide download icon
+                    imagePopup.style.display = 'none';
+                    downloadLink.style.display = 'none';
                 };
             });
 
@@ -309,7 +307,6 @@
                     adminModal.style.display = 'none';
                     adminButton.style.display = 'none';
 
-                    // Show delete button and enable delete mode
                     deleteMode = true;
                     renderImages();
 
@@ -330,7 +327,6 @@
                         deleteMode = false;
                     });
 
-                    // 업로드 모달 보이기
                     uploadModal.style.display = 'block';
 
                     uploadButton.addEventListener('click', () => {
@@ -346,7 +342,6 @@
                             };
                             reader.readAsDataURL(file);
 
-                            // Clear input fields
                             imageUploadInput.value = '';
                             tagInput.value = '';
                         }
@@ -356,7 +351,6 @@
                 }
             });
 
-            // Search functionality
             searchButton.addEventListener('click', () => {
                 const searchText = searchBar.value.toLowerCase();
                 const filteredImages = images.filter(image => image.tags.some(tag => tag.toLowerCase().includes(searchText)));
@@ -381,11 +375,10 @@
                         if (deleteMode) {
                             checkbox.checked = !checkbox.checked;
                         } else {
-                            // Show image popup
                             popupImage.src = image.src;
                             imagePopup.style.display = 'block';
-                            downloadLink.href = image.src; // Set href for download link
-                            downloadLink.style.display = 'block'; // Show download icon
+                            downloadLink.href = image.src;
+                            downloadLink.style.display = 'block';
                         }
                     });
 
@@ -393,7 +386,6 @@
                 });
             };
 
-            // Initial render
             renderImages();
         });
     </script>
