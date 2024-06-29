@@ -3,74 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Firebase 이미지 검색 사이트</title>
+<title>이미지 업로드 예제</title>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-  }
-  .container {
-    max-width: 800px;
-    margin: 0 auto;
+  /* CSS 스타일링 코드 */
+  .upload-form {
+    max-width: 400px;
+    margin: 50px auto;
     padding: 20px;
-  }
-  .search-container {
-    text-align: center;
-    margin-top: 200px;
-  }
-  .search-box {
-    width: 80%;
-    padding: 10px;
-    border-radius: 20px;
     border: 1px solid #ccc;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    outline: none;
-    font-size: 16px;
-  }
-  .search-box:focus {
-    border-color: dodgerblue;
-  }
-  .search-icon {
-    float: right;
-    margin-right: 10px;
-    cursor: pointer;
-  }
-  .image-grid {
-    margin-top: 50px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .image-box {
-    width: calc(20% - 20px);
-    margin: 10px;
-    overflow: hidden;
     border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    cursor: pointer;
   }
-  .image-box img {
-    width: 100%;
-    height: auto;
-    display: block;
+  .upload-form input[type="file"] {
+    margin-bottom: 10px;
+  }
+  .upload-form button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
   }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="search-container">
-    <input type="text" id="searchInput" class="search-box" placeholder="이미지 이름 검색...">
-    <span class="search-icon" onclick="searchImages()">&#128269;</span>
-  </div>
-  <div class="image-grid" id="imageGrid">
-    <!-- 이미지가 여기에 추가됩니다 -->
-  </div>
+
+<div class="upload-form">
+  <h2>이미지 업로드</h2>
+  <input type="file" id="fileInput">
+  <button onclick="uploadImage()">업로드</button>
 </div>
 
+<!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+  import { getDatabase, ref as dbRef, push, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
   // Firebase 설정
   const firebaseConfig = {
@@ -86,43 +53,50 @@
 
   // Firebase 초기화
   const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+  const storage = getStorage(app);
+  const database = getDatabase(app);
 
-  // 이미지 검색 함수
-  function searchImages() {
-    const searchValue = document.getElementById('searchInput').value.toLowerCase();
-    const imageGrid = document.getElementById('imageGrid');
-    imageGrid.innerHTML = ''; // 이미지 그리드 초기화
+  // 이미지 업로드 함수
+  function uploadImage() {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+    
+    // 이미지 파일을 Firebase Storage에 업로드
+    const storageRef = ref(storage, 'images/' + file.name);
+    const uploadTask = uploadBytesResumable(storageRef, file);
 
-    const imagesRef = ref(db, 'images');
-    onValue(imagesRef, (snapshot) => {
-      snapshot.forEach((childSnapshot) => {
-        const imageData = childSnapshot.val();
-        const imageName = imageData.name.toLowerCase();
-        // 검색어가 이미지 이름에 포함되는 경우 또는 검색어의 한 글자가 이미지 이름에 포함되는 경우
-        if (imageName.includes(searchValue) || searchValue.split('').some(char => imageName.includes(char))) {
-          const imageBox = document.createElement('div');
-          imageBox.className = 'image-box';
-          imageBox.innerHTML = `<img src="${imageData.url}" alt="${imageData.name}">`;
-          imageGrid.appendChild(imageBox);
-        }
-      });
+    uploadTask.on('state_changed',
+      (snapshot) => {
+        // 업로드 진행 상태를 모니터링할 수 있습니다.
+      },
+      (error) => {
+        console.error('업로드 에러:', error);
+      },
+      () => {
+        // 업로드가 완료되면 이미지의 다운로드 URL을 가져와서 데이터베이스에 저장합니다.
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          saveImageDataToDatabase(file.name, downloadURL);
+        });
+      }
+    );
+  }
+
+  // 데이터베이스에 이미지 정보 저장
+  function saveImageDataToDatabase(imageName, imageURL) {
+    const imagesRef = ref(database, 'images');
+    const newImageRef = push(imagesRef);
+    set(newImageRef, {
+      name: imageName,
+      url: imageURL
+    }).then(() => {
+      console.log('이미지 정보가 데이터베이스에 저장되었습니다.');
+    }).catch((error) => {
+      console.error('데이터베이스 에러:', error);
     });
   }
 </script>
+
 </body>
 </html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Firebase 이미지 표시 예제</title>
-</head>
-<body>
 
-<!-- Firebase Storage에 업로드된 이미지를 표시할 예제 -->
-<img src="https://firebasestorage.googleapis.com/v0/b/junieham-68b8c.appspot.com/o/images%2F제목_없는_아트워크%203.PNG?alt=media&token=e8d94c08-4e15-4927-99ff-5e1fbdfed967="Example Image">
-
-</body>
 </html>
