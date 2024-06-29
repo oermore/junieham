@@ -1,485 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photo Gallery with Upload and Tagging</title>
-    <style>
-         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-
-        .search-container {
-            position: absolute;
-            top: 200px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            background-color: #fff;
-            border-radius: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 10px;
-        }
-
-        .search-bar-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
-        #search-bar {
-            width: 100%;
-            padding: 10px 40px 10px 10px;
-            font-size: 16px;
-            border-radius: 25px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-        }
-
-        #search-button {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            height: 20px;
-            width: 20px;
-            padding: 0;
-        }
-
-        #search-button img {
-            width: 100%;
-            height: 100%;
-        }
-
-        .image-gallery {
-            margin-top: 300px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .image-box {
-            position: relative;
-            width: 150px;
-            height: 150px;
-            margin: 10px;
-            border: 1px solid #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            background-size: cover;
-            background-position: center;
-        }
-
-        .image-box input[type="checkbox"] {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            display: none;
-        }
-.delete-mode .image-box input[type="checkbox"] {
-            display: block;
-        }
-
-        footer {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-        }
-
-        #oermore {
-            font-weight: bold;
-            cursor: pointer;
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            display: block;
-        }
-
-        #ham {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .admin-button {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            display: none;
-        }
-
-        .admin-button.show {
-            display: block;
-        }
-
-        .popup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #fefefe;
-            padding: 20px;
-            border: 1px solid #888;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            z-index: 999;
-        }
-
-        .popup-content {
-            text-align: center;
-        }
-
-        .close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-        }
-
-        .modal-image {
-            max-width: 80%;
-            max-height: 80%;
-        }
-
-        .download-icon {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 5px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: none; /* Initially hide download icon */
-        }
-
-        .download-icon img {
-            width: 20px;
-            height: 20px;
-        }
-    </style>
-    <!-- Firebase SDK 스크립트 -->
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL, listAll } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCTiPWdi7utrLe6_jrXao7IlrS36nGgBbc",
-            authDomain: "junieham-68b8c.firebaseapp.com",
-            projectId: "junieham-68b8c",
-            storageBucket: "junieham-68b8c.appspot.com",
-            messagingSenderId: "106219844062",
-            appId: "1:106219844062:web:ed39c52351bb70b03e6d4f",
-            measurementId: "G-CRXYV0Z48F"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const storage = getStorage(app);
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const imageGallery = document.getElementById('image-gallery');
-            const uploadButton = document.getElementById('upload-button');
-            const imageFileInput = document.getElementById('image-file');
-            const tagInput = document.getElementById('tag-input');
-            const popupImage = document.getElementById('popup-image');
-            const downloadLink = document.getElementById('download-link');
-            let images = [];
-
-            const renderImages = () => {
-                imageGallery.innerHTML = '';
-                images.forEach((image, index) => {
-                    const imgBox = document.createElement('div');
-                    imgBox.classList.add('image-box');
-                    imgBox.style.backgroundImage = `url("${image.url}")`;
-
-                    imgBox.addEventListener('click', () => {
-                        popupImage.src = image.url;
-                        document.getElementById('image-popup').style.display = 'flex';
-                        downloadLink.href = image.url;
-                        downloadLink.style.display = 'block';
-                    });
-
-                    imageGallery.appendChild(imgBox);
-                });
-            };
-
-            const fetchImages = async () => {
-                const storageRef = ref(storage, 'images');
-                const result = await listAll(storageRef);
-                images = await Promise.all(result.items.map(async (itemRef) => {
-                    const url = await getDownloadURL(itemRef);
-                    return { url };
-                }));
-                renderImages();
-            };
-
-            uploadButton.addEventListener('click', async () => {
-                const file = imageFileInput.files[0];
-                if (file) {
-                    const storageRef = ref(storage, `images/${file.name}`);
-                    await uploadBytes(storageRef, file);
-                    const url = await getDownloadURL(storageRef);
-                    images.push({ url });
-                    renderImages();
-                }
-            });
-
-            fetchImages();
-        });
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firebase 이미지 검색 사이트</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .search-container {
+    text-align: center;
+    margin-top: 200px;
+  }
+  .search-box {
+    width: 80%;
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    outline: none;
+    font-size: 16px;
+  }
+  .search-box:focus {
+    border-color: dodgerblue;
+  }
+  .search-icon {
+    float: right;
+    margin-right: 10px;
+    cursor: pointer;
+  }
+  .image-grid {
+    margin-top: 50px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .image-box {
+    width: calc(20% - 20px);
+    margin: 10px;
+    overflow: hidden;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    cursor: pointer;
+  }
+  .image-box img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+</style>
 </head>
 <body>
-    <div class="search-container">
-        <div class="search-bar-wrapper">
-            <input type="text" id="search-bar" placeholder="Search...">
-            <button id="search-button"><img src="search-icon.png" alt="Search"></button>
-        </div>
-    </div>
-    
-    <div class="image-gallery" id="image-gallery">
-        <!-- Images will be dynamically added here -->
-    </div>
-    
-    <footer>
-        <span id="oermore">oermore</span>
-    </footer>
+<div class="container">
+  <div class="search-container">
+    <input type="text" id="searchInput" class="search-box" placeholder="이미지 이름 검색...">
+    <span class="search-icon" onclick="searchImages()">&#128269;</span>
+  </div>
+  <div class="image-grid" id="imageGrid">
+    <!-- 이미지가 여기에 추가됩니다 -->
+  </div>
+</div>
 
-    <span id="ham">ham</span>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    <button id="admin-button" class="admin-button">Enter Password</button>
+  // Firebase 설정
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    databaseURL: "YOUR_DATABASE_URL",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID",
+    measurementId: "YOUR_MEASUREMENT_ID"
+  };
 
-    <div id="admin-modal" class="popup">
-        <div class="popup-content">
-            <span class="close">&times;</span>
-            <input type="password" id="admin-password" placeholder="Enter Password">
-            <button id="admin-login">Login</button>
-        </div>
-    </div>
+  // Firebase 초기화
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-    <div id="upload-modal" class="popup">
-        <div class="popup-content">
-            <span class="close">&times;</span>
-            <h2>사진 업로드</h2>
-            <input type="file" id="image-upload" accept="image/*">
-            <input type="text" id="tag-input" placeholder="태그 입력 (쉼표로 구분)">
-            <button id="upload-button">업로드</button>
-        </div>
-    </div>
+  // 이미지 검색 함수
+  function searchImages() {
+    const searchValue = document.getElementById('searchInput').value.toLowerCase();
+    const imageGrid = document.getElementById('imageGrid');
+    imageGrid.innerHTML = ''; // 이미지 그리드 초기화
 
-    <div id="image-popup" class="popup">
-        <div class="popup-content">
-            <span class="close">&times;</span>
-            <img id="popup-image" class="modal-image">
-            <a id="download-link" class="download-icon" download><img src="download-icon.png" alt="Download"></a>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const searchBar = document.getElementById('search-bar');
-            const searchButton = document.getElementById('search-button');
-            const imageGallery = document.getElementById('image-gallery');
-            const oermore = document.getElementById('oermore');
-            const ham = document.getElementById('ham');
-            const adminModal = document.getElementById('admin-modal');
-            const adminButton = document.getElementById('admin-button');
-            const adminLoginButton = document.getElementById('admin-login');
-            const passwordInput = document.getElementById('admin-password');
-            const closePopups = document.querySelectorAll('.close');
-            const uploadModal = document.getElementById('upload-modal');
-            const uploadButton = document.getElementById('upload-button');
-            const imageUploadInput = document.getElementById('image-upload');
-            const tagInput = document.getElementById('tag-input');
-            const batchUploadButton = document.createElement('button');
-            const batchUploadInput = document.createElement('input');
-            const batchTagInput = document.createElement('input');
-            const imagePopup = document.getElementById('image-popup');
-            const popupImage = document.getElementById('popup-image');
-            const downloadLink = document.getElementById('download-link');
-
-            batchUploadButton.textContent = '일괄 업로드';
-            batchUploadButton.classList.add('admin-button');
-            document.body.appendChild(batchUploadButton);
-            
-            batchUploadInput.type = 'file';
-            batchUploadInput.style.display = 'none';
-            document.body.appendChild(batchUploadInput);
-            
-            batchTagInput.type = 'text';
-            batchTagInput.placeholder = '태그 (쉼표로 구분)';
-            batchTagInput.style.display = 'none';
-            document.body.appendChild(batchTagInput);
-
-            let images = JSON.parse(localStorage.getItem('images')) || [];
-            let deleteMode = false;
-
-            const renderImages = () => {
-                imageGallery.innerHTML = '';
-                images.forEach((image, index) => {
-                    const imgBox = document.createElement('div');
-                    imgBox.classList.add('image-box');
-                    imgBox.style.backgroundImage = `url("${image.src}")`;
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.classList.add('delete-checkbox');
-                    checkbox.dataset.index = index;
-
-                    imgBox.appendChild(checkbox);
-
-                    imgBox.addEventListener('click', () => {
-                        if (deleteMode) {
-                            checkbox.checked = !checkbox.checked;
-                        } else {
-                            // Show image popup
-                            popupImage.src = image.src;
-                            imagePopup.style.display = 'block';
-                            downloadLink.href = image.src; // Set href for download link
-                            downloadLink.style.display = 'block'; // Show download icon
-                        }
-                    });
-
-                    imageGallery.appendChild(imgBox);
-                });
-
-                if (deleteMode) {
-                    imageGallery.classList.add('delete-mode');
-                } else {
-                    imageGallery.classList.remove('delete-mode');
-                }
-            };
-
-            const saveImages = () => {
-                localStorage.setItem('images', JSON.stringify(images));
-            };
-
-            oermore.addEventListener('click', () => {
-                adminModal.style.display = 'block';
-            });
-
-            ham.addEventListener('click', () => {
-                adminModal.style.display = 'block';
-            });
-
-            adminButton.addEventListener('click', () => {
-                adminModal.style.display = 'block';
-            });
-
-            closePopups.forEach(button => {
-                button.onclick = () => {
-                    adminModal.style.display = 'none';
-                    uploadModal.style.display = 'none';
-                    imagePopup.style.display = 'none'; // Hide image popup
-                    downloadLink.style.display = 'none'; // Hide download icon
-                };
-            });
-
-            adminLoginButton.addEventListener('click', () => {
-                const password = passwordInput.value;
-                if (password === '06280') {
-                    adminModal.style.display = 'none';
-                    adminButton.style.display = 'none';
-
-                    // Show delete button and enable delete mode
-                    deleteMode = true;
-                    renderImages();
-
-                    const deleteButton = document.createElement('button');
-                    deleteButton.textContent = 'Delete Selected Images';
-                    deleteButton.classList.add('admin-button', 'show');
-                    document.body.appendChild(deleteButton);
-
-                    deleteButton.addEventListener('click', () => {
-                        const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
-                        const indicesToDelete = Array.from(checkboxes).map(checkbox => parseInt(checkbox.dataset.index));
-
-                        images = images.filter((_, index) => !indicesToDelete.includes(index));
-                        saveImages();
-                        renderImages();
-
-                        deleteButton.remove();
-                        deleteMode = false;
-                    });
-
-                    // 업로드 모달 보이기
-                    uploadModal.style.display = 'block';
-
-                    uploadButton.addEventListener('click', () => {
-                        const file = imageUploadInput.files[0];
-                        const tags = tagInput.value.split(',').map(tag => tag.trim());
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                                const imageSrc = reader.result;
-                                images.push({ src: imageSrc, tags: tags });
-                                saveImages();
-                                renderImages();
-                            };
-                            reader.readAsDataURL(file);
-
-                            // Clear input fields
-                            imageUploadInput.value = '';
-                            tagInput.value = '';
-                        }
-                    });
-                } else {
-                    alert('Incorrect password');
-                }
-            });
-
-            // Search functionality
-            searchButton.addEventListener('click', () => {
-                const searchText = searchBar.value.toLowerCase();
-                const filteredImages = images.filter(image => image.tags.some(tag => tag.toLowerCase().includes(searchText)));
-                renderFilteredImages(filteredImages);
-            });
-
-            const renderFilteredImages = (filteredImages) => {
-                imageGallery.innerHTML = '';
-                filteredImages.forEach((image, index) => {
-                    const imgBox = document.createElement('div');
-                    imgBox.classList.add('image-box');
-                    imgBox.style.backgroundImage = `url("${image.src}")`;
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.classList.add('delete-checkbox');
-                    checkbox.dataset.index = index;
-
-                    imgBox.appendChild(checkbox);
-
-                    imgBox.addEventListener('click', () => {
-                        if (deleteMode) {
-                            checkbox.checked = !checkbox.checked;
-                        } else {
-                            // Show image popup
-                            popupImage.src = image.src;
-                            imagePopup.style.display = 'block';
-                            downloadLink.href = image.src; // Set href for download link
-                            downloadLink.style.display = 'block'; // Show download icon
-                        }
-                    });
-
-                    imageGallery.appendChild(imgBox);
-                });
-            };
-
-            // Initial render
-            renderImages();
-        });
-    </script>
+    const imagesRef = ref(db, 'images');
+    onValue(imagesRef, (snapshot) => {
+      snapshot.forEach((childSnapshot) => {
+        const imageData = childSnapshot.val();
+        const imageName = imageData.name.toLowerCase();
+        // 검색어가 이미지 이름에 포함되는 경우 또는 검색어의 한 글자가 이미지 이름에 포함되는 경우
+        if (imageName.includes(searchValue) || searchValue.split('').some(char => imageName.includes(char))) {
+          const imageBox = document.createElement('div');
+          imageBox.className = 'image-box';
+          imageBox.innerHTML = `<img src="${imageData.url}" alt="${imageData.name}">`;
+          imageGrid.appendChild(imageBox);
+        }
+      });
+    });
+  }
+</script>
 </body>
 </html>
