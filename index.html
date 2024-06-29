@@ -1,173 +1,119 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang=“ko”>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이미지 검색 사이트</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+ 	<title>oermore</title>
     <style>
-        /* 스타일링은 여기에 추가 */
-        body {
+	body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
         }
-        .upload-form {
-            margin-bottom: 20px;
-        }
-        .image-item {
-            margin-bottom: 10px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        #passwordModal {
-            display: none;
-            position: fixed;
-            top: 50%;
+
+        .search-container {
+            position: absolute;
+            top: 200px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            z-index: 999;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            background-color: #fff;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 10px;
         }
-    </style>
+
+        .search-bar-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        #search-bar {
+            width: 100%;
+            padding: 10px 40px 10px 10px;
+            font-size: 16px;
+            border-radius: 25px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        #search-button {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            height: 20px;
+            width: 20px;
+            padding: 0;
+        }
+	   
+	#search-button img {
+            width: 100%;
+            height: 100%;
+        }
+
+	.image-gallery {
+	    margin-top: 300px;
+            display: flex;
+            flex-wrap: wrap;
+	    justify-content: center;
+            gap: 10px; /* 이미지 간의 간격 조정 */
+        }
+        .image-gallery img {
+            width: 100px; /* 이미지 너비 조정 */
+            height: auto; /* 이미지 높이를 비율에 맞게 자동 조정 */
+        }
+
+	
+	</style>
 </head>
+
 <body>
-    <h1>이미지 검색 사이트</h1>
 
-    <!-- 이미지 업로드 폼 -->
-    <div class="upload-form">
-        <input type="file" id="imageFile">
-        <input type="text" id="imageTags" placeholder="태그 입력 (쉼표로 구분)">
-        <button onclick="showPasswordModalAndUpload()">이미지 업로드</button>
+	<div class="search-container">
+        <div class="search-bar-wrapper">
+            <input type="text" id="search-bar" placeholder="Search...">
+            <button id="search-button"><img src="search-icon.png" alt="Search"></button>
+        </div>
     </div>
 
-    <!-- 이미지 목록 -->
-    <h2>업로드된 이미지 목록</h2>
-    <div id="imageList">
-        <!-- 이미지 목록이 여기에 동적으로 추가됩니다. -->
-    </div>
 
-    <!-- Ham 버튼 -->
-    <div id="hamButton" style="position: fixed; bottom: 20px; right: 20px;">
-        <button onclick="showPasswordModal()">Ham 버튼</button>
+ <div class="image-gallery" id="image-gallery">
+        <!-- Images will be dynamically added here -->
     </div>
-
-    <!-- 비밀번호 입력 모달 -->
-    <div id="passwordModal">
-        <input type="password" id="passwordInput" placeholder="비밀번호 입력">
-        <button onclick="validatePassword()">확인</button>
-    </div>
-
-    <!-- Firebase 스크립트 추가 -->
-    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-storage.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database.js"></script>
 
     <script>
-          // Firebase 설정
-  const firebaseConfig = {
-    apiKey: "AIzaSyCTiPWdi7utrLe6_jrXao7IlrS36nGgBbc",
-    authDomain: "junieham-68b8c.firebaseapp.com",
-    projectId: "junieham-68b8c",
-    databaseURL: "YOUR_DATABASE_URL",
-    storageBucket: "junieham-68b8c.appspot.com",
-    messagingSenderId: "106219844062",
-    appId: "1:106219844062:web:ed39c52351bb70b03e6d4f",
-    measurementId: "G-CRXYV0Z48F"
-  };
+        // 이미지 갤러리 div 요소 선택
+        const imageGallery = document.getElementById('image-gallery');
 
-
-        // Firebase 초기화
-        firebase.initializeApp(firebaseConfig);
-
-        // Firebase 스토리지와 데이터베이스 참조
-        const storage = firebase.storage();
-        const database = firebase.database();
-
-        // 이미지 업로드 함수 (비밀번호 입력 모달 표시 후 호출)
-        function uploadImage() {
-            const file = document.getElementById('imageFile').files[0];
-            const tags = document.getElementById('imageTags').value.split(',');
-
-            // 파일 이름 생성
-            const imageName = `${new Date().getTime()}_${file.name}`;
-
-            // 스토리지에 이미지 업로드
-            const storageRef = storage.ref(`images/${imageName}`);
-            const uploadTask = storageRef.put(file);
-
-            uploadTask.then(snapshot => {
-                // 업로드 성공 후 데이터베이스에 이미지 메타데이터 저장
-                return database.ref('images').push({
-                    imageName: imageName,
-                    tags: tags
-                });
-            }).then(() => {
-                alert('이미지가 성공적으로 업로드되었습니다.');
-                document.getElementById('imageFile').value = '';
-                document.getElementById('imageTags').value = '';
-                loadImages(); // 이미지 목록 다시 로드
-            }).catch(error => {
-                console.error('이미지 업로드 오류:', error);
-            });
+        // 이미지를 동적으로 추가하는 함수 정의
+        function addImageToGallery(src) {
+            // 새로운 img 요소 생성
+            const img = document.createElement('img');
+            // img 요소의 src 속성 설정
+            img.src = src;
+            // img 요소를 imageGallery div에 추가
+            imageGallery.appendChild(img);
         }
 
-        // 이미지 목록 로드 함수
-        function loadImages() {
-            const imageList = document.getElementById('imageList');
-            imageList.innerHTML = '';
-
-            database.ref('images').once('value', snapshot => {
-                snapshot.forEach(childSnapshot => {
-                    const imageKey = childSnapshot.key;
-                    const imageData = childSnapshot.val();
-
-                    // 이미지 목록에 추가
-                    const imageItem = document.createElement('div');
-                    imageItem.classList.add('image-item');
-                    imageItem.innerHTML = `
-                        <p>${imageData.imageName}</p>
-                        <p>태그: ${imageData.tags.join(', ')}</p>
-                    `;
-                    imageList.appendChild(imageItem);
-                });
-            });
-        }
-
-        // Ham 버튼 클릭 시 비밀번호 입력 모달 표시
-        function showPasswordModal() {
-            document.getElementById('passwordModal').style.display = 'block';
-        }
-
-        // Ham 버튼 클릭 시 비밀번호 입력 모달 표시 및 이미지 업로드 함수와 연결
-        function showPasswordModalAndUpload() {
-            showPasswordModal();
-            document.getElementById('passwordInput').focus();
-        }
-
-        // 비밀번호 검증 함수 (임의로 구현)
-        function validatePassword() {
-            const password = document.getElementById('passwordInput').value;
-
-            // 여기서 비밀번호 검증 로직 추가
-            // 예시로 비밀번호가 'password'일 때만 업로드 함수 호출하도록 설정
-            if (password === 'password') {
-                uploadImage();
-            } else {
-                alert('올바른 비밀번호를 입력해주세요.');
-            }
-
-            // 비밀번호 입력 모달 닫기
-            document.getElementById('passwordModal').style.display = 'none';
-        }
-
-        // 페이지 로드 시 이미지 목록 로드
-        window.onload = function() {
-            loadImages();
-        };
+        // 예시로 이미지를 추가하는 코드
+        addImageToGallery('download-icon.png');
+        addImageToGallery('download-icon.png');
+        addImageToGallery('download-icon.png');
     </script>
+
+	
+    </div>
+
+	<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchBar = document.getElementById('search-bar');
+            const searchButton = document.getElementById('search-button');
+
 </body>
 </html>
