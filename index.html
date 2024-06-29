@@ -68,9 +68,75 @@
             width: 100px; /* 이미지 너비 조정 */
             height: auto; /* 이미지 높이를 비율에 맞게 자동 조정 */
         }
+
+	#text  {
+            position: absolute;
+            top: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            color : #656565;
+        }
+
+	#text2  {
+            position: absolute;
+            top: 270px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            color : #656565;
+	    font-size: X-small;
+
+        }
+
+	#text3  {
+            position: absolute;
+            top: 285px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            color : #656565;
+	    font-size: X-small;
+
+        }
+
+#box  {
+            position: absolute;
+            top: 155px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            color : #656565;
+	    font-size: X-small;
+
+        }
+
+
     </style>
 </head>
 <body>
+
+<!-- 버튼과 링크 -->
+<div class="box" id="box">
+<button onclick="window.location.href='https://www.instagram.com/o_er_more';">OERMORE</button>
+</div>
+
+<div class="text" id="text">
+<span> 영어 소문자로 검색 부탁드립니다.</span>
+</div>
+
+<div class="text2" id="text2">
+<span> 프로필 이미지 | 인스타 하이라이트 | 인스타 스토리 스티커 | 배경화면 으로 이용가능합니다.</span>
+</div>
+
+<div class="text3" id="text3">
+<span> 인쇄는 금지입니다. 가정용 프린터기로도 인쇄 금지. 상업적 이용. 2차가공 금지.</span>
+</div>
+
     <div class="search-container">
         <div class="search-bar-wrapper">
             <input type="text" id="search-bar" placeholder="Search...">
@@ -88,9 +154,9 @@
 
         // 예시 이미지 리스트 (src 속성을 사용)
         const images = [
-            { name: 'download-icon.png', src: 'download-icon.png' },
-            { name: 'download-icon.png', src: 'download-icon.png' },
-            { name: 'download-icon.png', src: 'download-icon.png' }
+            { name: 'Animal_guineapig _ham.png', src: 'Animal_guineapig _ham.png' },
+            { name: 'Snack_Strawberry Mochi_Ham.png', src: 'Snack_Strawberry Mochi_Ham.png' },
+            { name: 'exercise_hobby_surfing_tanning_ham.png', src: 'exercise_hobby_surfing_tanning_ham.png' }
         ];
 
         // 초기 이미지를 모두 추가하는 함수
@@ -117,7 +183,7 @@
             imageGallery.innerHTML = '';
 
             // 검색된 이미지 추가
-            const filteredImages = images.filter(image => image.name.includes(imageName));
+            const filteredImages = images.filter(image => image.name.toLowerCase().includes(imageName));
             if (filteredImages.length > 0) {
                 filteredImages.forEach(image => addImageToGallery(image.src));
             } else if (imageName === '') {
@@ -132,6 +198,13 @@
         document.addEventListener('DOMContentLoaded', () => {
             const searchButton = document.getElementById('search-button');
             searchButton.addEventListener('click', searchImage);
+
+            // Enter 키로 검색을 실행할 수 있도록 추가
+            document.getElementById('search-bar').addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    searchImage();
+                }
+            });
 
             // 페이지 로드 시 모든 이미지 표시
             displayAllImages();
