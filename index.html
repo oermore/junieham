@@ -5,205 +5,155 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Gallery with Upload and Tagging</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-
-        .search-container {
-            position: absolute;
-            top: 200px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            background-color: #fff;
-            border-radius: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 10px;
-        }
-
-        .search-bar-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
-        #search-bar {
-            width: 100%;
-            padding: 10px 40px 10px 10px;
-            font-size: 16px;
-            border-radius: 25px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-        }
-
-        #search-button {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            height: 20px;
-            width: 20px;
-            padding: 0;
-        }
-
-        #search-button img {
-            width: 100%;
-            height: 100%;
-        }
-
         .image-gallery {
-            margin-top: 300px;
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
         }
-
         .image-box {
-            position: relative;
-            width: calc(20% - 10px);
+            width: 150px;
             height: 150px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
             background-size: cover;
             background-position: center;
+            margin: 5px;
+            position: relative;
         }
-
-        .image-box input[type="checkbox"] {
+        .delete-checkbox {
             position: absolute;
             top: 5px;
-            right: 5px;
-            display: none;
+            left: 5px;
         }
-
-        .delete-mode .image-box input[type="checkbox"] {
-            display: block;
-        }
-
-        footer {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-        }
-
-        #oermore {
-            font-weight: bold;
-            cursor: pointer;
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            display: block;
-        }
-
-        #ham {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .admin-button {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            display: none;
-        }
-
-        .admin-button.show {
-            display: block;
-        }
-
         .popup {
             display: none;
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #fefefe;
-            padding: 20px;
-            border: 1px solid #888;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            z-index: 999;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
         }
-
         .popup-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
             text-align: center;
         }
-
+        .modal-image {
+            max-width: 100%;
+            height: auto;
+        }
+        .download-icon {
+            margin-top: 10px;
+        }
         .close {
             position: absolute;
             top: 10px;
             right: 10px;
             cursor: pointer;
         }
-
-        .modal-image {
-            max-width: 80%;
-            max-height: 80%;
-        }
-
-        .download-icon {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 5px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: none;
-        }
-
-        .download-icon img {
-            width: 20px;
-            height: 20px;
-        }
     </style>
+    <!-- Firebase SDK 스크립트 -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, listAll } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTiPWdi7utrLe6_jrXao7IlrS36nGgBbc",
+            authDomain: "junieham-68b8c.firebaseapp.com",
+            projectId: "junieham-68b8c",
+            storageBucket: "junieham-68b8c.appspot.com",
+            messagingSenderId: "106219844062",
+            appId: "1:106219844062:web:ed39c52351bb70b03e6d4f",
+            measurementId: "G-CRXYV0Z48F"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const imageGallery = document.getElementById('image-gallery');
+            const uploadButton = document.getElementById('upload-button');
+            const imageFileInput = document.getElementById('image-file');
+            const tagInput = document.getElementById('tag-input');
+            const popupImage = document.getElementById('popup-image');
+            const downloadLink = document.getElementById('download-link');
+            let images = [];
+
+            const renderImages = () => {
+                imageGallery.innerHTML = '';
+                images.forEach((image, index) => {
+                    const imgBox = document.createElement('div');
+                    imgBox.classList.add('image-box');
+                    imgBox.style.backgroundImage = `url("${image.url}")`;
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.classList.add('delete-checkbox');
+                    checkbox.dataset.index = index;
+
+                    imgBox.appendChild(checkbox);
+
+                    imgBox.addEventListener('click', () => {
+                        popupImage.src = image.url;
+                        document.getElementById('image-popup').style.display = 'flex';
+                        downloadLink.href = image.url;
+                        downloadLink.style.display = 'block';
+                    });
+
+                    imageGallery.appendChild(imgBox);
+                });
+            };
+
+            const fetchImages = async () => {
+                const storageRef = ref(storage, 'images');
+                const result = await listAll(storageRef);
+                images = await Promise.all(result.items.map(async (itemRef) => {
+                    const url = await getDownloadURL(itemRef);
+                    return { url };
+                }));
+                renderImages();
+            };
+
+            uploadButton.addEventListener('click', async () => {
+                const file = imageFileInput.files[0];
+                const tags = tagInput.value.split(',').map(tag => tag.trim());
+                if (file) {
+                    const storageRef = ref(storage, `images/${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(storageRef);
+                    images.push({ url, tags });
+                    renderImages();
+                }
+            });
+
+            fetchImages();
+        });
+    </script>
 </head>
 <body>
     <div class="search-container">
-        <div class="search-bar-wrapper">
-            <input type="text" id="search-bar" placeholder="Search...">
-            <button id="search-button"><img src="search-icon.png" alt="Search"></button>
-        </div>
+        <input type="text" id="search-input" placeholder="태그로 검색">
     </div>
     
     <div class="image-gallery" id="image-gallery"></div>
     
     <footer>
-        <span id="oermore">oermore</span>
+        <button id="delete-mode-button">삭제 모드</button>
+        <button id="delete-selected-button">선택된 사진 삭제</button>
     </footer>
-
-    <span id="ham">ham</span>
-
-    <button id="admin-button" class="admin-button">Enter Password</button>
-
-    <div id="admin-modal" class="popup">
-        <div class="popup-content">
-            <span class="close">&times;</span>
-            <input type="password" id="admin-password" placeholder="Enter Password">
-            <button id="admin-login">Login</button>
-        </div>
-    </div>
 
     <div id="upload-modal" class="popup">
         <div class="popup-content">
-            <span class="close">&times;</span>
+            <span class="close" onclick="document.getElementById('upload-modal').style.display='none'">&times;</span>
             <h2>사진 업로드</h2>
-            <input type="text" id="image-url" placeholder="이미지 URL 입력">
+            <input type="file" id="image-file" accept="image/*">
             <input type="text" id="tag-input" placeholder="태그 입력 (쉼표로 구분)">
             <button id="upload-button">업로드</button>
         </div>
@@ -211,178 +161,10 @@
 
     <div id="image-popup" class="popup">
         <div class="popup-content">
-            <span class="close">&times;</span>
+            <span class="close" onclick="document.getElementById('image-popup').style.display='none'">&times;</span>
             <img id="popup-image" class="modal-image">
             <a id="download-link" class="download-icon" download><img src="download-icon.png" alt="Download"></a>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const searchBar = document.getElementById('search-bar');
-            const searchButton = document.getElementById('search-button');
-            const imageGallery = document.getElementById('image-gallery');
-            const oermore = document.getElementById('oermore');
-            const ham = document.getElementById('ham');
-            const adminModal = document.getElementById('admin-modal');
-            const adminButton = document.getElementById('admin-button');
-            const adminLoginButton = document.getElementById('admin-login');
-            const passwordInput = document.getElementById('admin-password');
-            const closePopups = document.querySelectorAll('.close');
-            const uploadModal = document.getElementById('upload-modal');
-            const uploadButton = document.getElementById('upload-button');
-            const imageUrlInput = document.getElementById('image-url');
-            const tagInput = document.getElementById('tag-input');
-            const imagePopup = document.getElementById('image-popup');
-            const popupImage = document.getElementById('popup-image');
-            const downloadLink = document.getElementById('download-link');
-
-            let images = JSON.parse(localStorage.getItem('images')) || [];
-            let deleteMode = false;
-
-            const renderImages = () => {
-                imageGallery.innerHTML = '';
-                images.forEach((image, index) => {
-                    const imgBox = document.createElement('div');
-                    imgBox.classList.add('image-box');
-                    imgBox.style.backgroundImage = `url("${image.src}")`;
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.classList.add('delete-checkbox');
-                    checkbox.dataset.index = index;
-
-                    imgBox.appendChild(checkbox);
-
-                    imgBox.addEventListener('click', () => {
-                        if (deleteMode) {
-                            checkbox.checked = !checkbox.checked;
-                        } else {
-                            // Show image popup
-                            popupImage.src = image.src;
-                            imagePopup.style.display = 'block';
-                            downloadLink.href = image.src;
-                            downloadLink.style.display = 'block';
-                        }
-                    });
-
-                    imageGallery.appendChild(imgBox);
-                });
-
-                if (deleteMode) {
-                    imageGallery.classList.add('delete-mode');
-                } else {
-                    imageGallery.classList.remove('delete-mode');
-                }
-            };
-
-            const saveImages = () => {
-                localStorage.setItem('images', JSON.stringify(images));
-            };
-
-            oermore.addEventListener('click', () => {
-                adminModal.style.display = 'block';
-            });
-
-            ham.addEventListener('click', () => {
-                adminModal.style.display = 'block';
-            });
-
-            adminButton.addEventListener('click', () => {
-                adminModal.style.display = 'block';
-            });
-
-            closePopups.forEach(button => {
-                button.onclick = () => {
-                    adminModal.style.display = 'none';
-                    uploadModal.style.display = 'none';
-                    imagePopup.style.display = 'none';
-                    downloadLink.style.display = 'none';
-                };
-            });
-
-            adminLoginButton.addEventListener('click', () => {
-                const password = passwordInput.value;
-                if (password === '06280') {
-                    adminModal.style.display = 'none';
-                    adminButton.style.display = 'none';
-
-                    deleteMode = true;
-                    renderImages();
-
-                    const deleteButton = document.createElement('button');
-                    deleteButton.textContent = 'Delete Selected Images';
-                    deleteButton.classList.add('admin-button', 'show');
-                    document.body.appendChild(deleteButton);
-
-                    deleteButton.addEventListener('click', () => {
-                        const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
-                        const indicesToDelete = Array.from(checkboxes).map(checkbox => parseInt(checkbox.dataset.index));
-
-                        images = images.filter((_, index) => !indicesToDelete.includes(index));
-                        saveImages();
-                        renderImages();
-
-                        deleteButton.remove();
-                        deleteMode = false;
-                    });
-
-                    uploadModal.style.display = 'block';
-
-                    uploadButton.addEventListener('click', () => {
-                        const imageUrl = imageUrlInput.value;
-                        const tags = tagInput.value.split(',').map(tag => tag.trim());
-                        if (imageUrl) {
-                            images.push({ src: imageUrl, tags: tags });
-                            saveImages();
-                            renderImages();
-
-                            imageUrlInput.value = '';
-                            tagInput.value = '';
-                        }
-                    });
-                } else {
-                    alert('Incorrect password');
-                }
-            });
-
-            searchButton.addEventListener('click', () => {
-                const searchText = searchBar.value.toLowerCase();
-                const filteredImages = images.filter(image => image.tags.some(tag => tag.toLowerCase().includes(searchText)));
-                renderFilteredImages(filteredImages);
-            });
-
-            const renderFilteredImages = (filteredImages) => {
-                imageGallery.innerHTML = '';
-                filteredImages.forEach((image, index) => {
-                    const imgBox = document.createElement('div');
-                    imgBox.classList.add('image-box');
-                    imgBox.style.backgroundImage = `url("${image.src}")`;
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.classList.add('delete-checkbox');
-                    checkbox.dataset.index = index;
-
-                    imgBox.appendChild(checkbox);
-
-                    imgBox.addEventListener('click', () => {
-                        if (deleteMode) {
-                            checkbox.checked = !checkbox.checked;
-                        } else {
-                            popupImage.src = image.src;
-                            imagePopup.style.display = 'block';
-                            downloadLink.href = image.src;
-                            downloadLink.style.display = 'block';
-                        }
-                    });
-
-                    imageGallery.appendChild(imgBox);
-                });
-            };
-
-            renderImages();
-        });
-    </script>
 </body>
 </html>
